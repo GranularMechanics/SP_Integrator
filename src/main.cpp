@@ -1,8 +1,4 @@
 #include <wx/wx.h>
-#include <wx/listbook.h>
-
-#include <random>
-
 #include "Frame.h"
 
 class MyApp : public wxApp
@@ -15,7 +11,7 @@ wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit()
 {
-    Frame *frame = new Frame("Hello World", wxPoint(50, 50), wxDefaultSize);
+    Frame *frame = new Frame("wx_projects", wxPoint(50, 50), wxDefaultSize);
     frame->Show(true);
     return true;
 }

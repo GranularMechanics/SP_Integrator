@@ -1,12 +1,80 @@
-#include "Frame.h"
 #include <wx/wx.h>
 #include <wx/listbook.h>
+#include "Frame.h"
 #include "drawingcanvas.h"
 #include "chartcontrol.h"
 
+wxBEGIN_EVENT_TABLE(Frame, wxFrame)
+EVT_MENU(ID_New, Frame::OnNew)
+EVT_MENU(ID_Open, Frame::OnOpen)
+EVT_MENU(ID_Save, Frame::OnSave)
+EVT_MENU(ID_Save_As, Frame::OnSaveAs)
+EVT_MENU(ID_Model, Frame::OnModel)
+wxEND_EVENT_TABLE()
+
 Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
-    : wxFrame(NULL, wxID_ANY, title, pos, size)
+    : wxFrame(nullptr, wxID_ANY, title, pos, size)
 {
+    // add a menu bar
+    wxMenuBar* menuBar = new wxMenuBar;
+    SetMenuBar(menuBar);
+
+    // add menu for File operations
+    wxMenu* menuFile = new wxMenu;
+    menuBar->Append(menuFile, "&File");
+    menuFile->Append(ID_New, "&New", "Open a new file");
+    menuFile->Append(ID_Open, "&Open", "Open an existing file");
+    menuFile->Append(ID_Save, "&Save", "Save to file");
+    menuFile->Append(ID_Save_As, "&Save As", "Save to a new file");
+    menuFile->AppendSeparator();
+    menuFile->Append(ID_Print, "&Print", "Save to file");
+    menuFile->AppendSeparator();
+    menuFile->Append(wxID_EXIT);
+
+    // add menu for View operations
+    wxMenu* menuView = new wxMenu;
+    menuBar->Append(menuView, "&View");
+    menuView->Append(ID_Loading, "&Loading", "Select a Constitutive Model");
+    menuView->Append(ID_2DPlots, "&2D Plots", "Select a Constitutive Model");
+    menuView->Append(ID_3DPlot, "&3D Plot", "Select a Constitutive Model");
+
+    // add menu for Model operations
+    wxMenu* menuModel = new wxMenu;
+    menuBar->Append(menuModel, "&Model");
+    menuModel->Append(ID_Model, "&Model", "Select a Constitutive Model");
+
+    // add menu for Settings
+    wxMenu* menuSettings = new wxMenu;
+    menuBar->Append(menuSettings, "&Settings");
+    menuSettings->Append(ID_Controls, "&Controls", "Integration Controls");
+    menuSettings->Append(ID_Methods, "&Methods", "Integration Methods");
+    menuSettings->Append(ID_Tolerances, "&Tolerances", "Integration Tolerances");
+
+    // add menu for Data
+    wxMenu* menuData = new wxMenu;
+    menuBar->Append(menuData, "&Data");
+    menuData->Append(ID_Data, "&Data Files", "Integration Data");
+
+    // add menu for Help operations
+    wxMenu* menuHelp = new wxMenu;
+    menuBar->Append(menuHelp, "&Help");
+    menuHelp->Append(ID_Documentation, "&Documentation", "Online Documentation");
+    menuHelp->Append(wxID_ABOUT);
+
+    // add a toolbar
+    m_ToolBar = this->CreateToolBar(wxTB_HORIZONTAL, wxID_ANY);
+    // add the Status Bar
+    CreateStatusBar();
+    SetStatusText("Welcome to the Lassonde Integrator");
+
+    Bind(wxEVT_MENU, &Frame::OnNew, this, ID_New);
+    Bind(wxEVT_MENU, &Frame::OnOpen, this, ID_Open);
+    Bind(wxEVT_MENU, &Frame::OnSave, this, ID_Save);
+    Bind(wxEVT_MENU, &Frame::OnSaveAs, this, ID_Save_As);
+    Bind(wxEVT_MENU, &Frame::OnExit, this, wxID_EXIT);
+    Bind(wxEVT_MENU, &Frame::OnModel, this, ID_Model);
+    Bind(wxEVT_MENU, &Frame::OnAbout, this, wxID_ABOUT);
+
     auto tabs = new wxListbook(this, wxID_ANY, wxDefaultPosition, this->FromDIP(wxSize(640, 480)), wxNB_TOP);
     tabs->SetInternalBorder(0);
 
@@ -39,7 +107,6 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
 
     this->SetSizerAndFit(mainSizer);
 
-    CreateStatusBar(1);
     SetStatusText("Ready", 0);
 }
 
@@ -88,4 +155,48 @@ wxPanel *Frame::createButtonPanel(wxWindow *parent)
     removeLastButton->Bind(wxEVT_BUTTON, &Frame::OnRemoveButtonClick, this);
 
     return panel;
+}
+
+void Frame::OnNew(wxCommandEvent& event)
+{
+    wxLogMessage("Hello world from wxWidgets!");
+}
+
+void Frame::OnOpen(wxCommandEvent& event)
+{
+}
+
+void Frame::OnSave(wxCommandEvent& event)
+{
+    //ModelFrame* model = new ModelFrame(this, "Model");
+    //model->Show();
+    //event.Skip();
+}
+
+void Frame::OnSaveAs(wxCommandEvent& event)
+{
+    //Pane* pane = new Pane(this);
+}
+
+void Frame::OnExit(wxCommandEvent& event)
+{
+    Close(true);
+    event.Skip();
+}
+
+void Frame::OnModel(wxCommandEvent& event)
+{
+    //ModelFrame* model = new ModelFrame(this, "Model");
+    //model->Show();
+}
+
+void Frame::OnAbout(wxCommandEvent& event)
+{
+    wxMessageBox("This is a wxWidgets Hello World example",
+        "About Hello World", wxOK | wxICON_INFORMATION);
+}
+
+Frame::~Frame()
+{
+
 }
