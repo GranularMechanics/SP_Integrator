@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6 FATAL_ERROR)
 
-project(wx_drawing_tutorial_core LANGUAGES CXX)
+project(wx_project_core LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,7 +14,7 @@ set(wxWidgets_USE_STATIC 1)
 
 find_package(wxWidgets REQUIRED)
 
-set(SRCS main.cpp drawingcanvas.cpp chartcontrol.cpp)
+set(SRCS main.cpp Frame.cpp drawingcanvas.cpp chartcontrol.cpp)
 
 include(${wxWidgets_USE_FILE})
 
