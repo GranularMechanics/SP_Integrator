@@ -11,7 +11,7 @@ wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit()
 {
-    Frame *frame = new Frame("wx_projects", wxPoint(50, 50), wxDefaultSize);
+    Frame *frame = new Frame("wx_projects", wxPoint(640, 480), wxDefaultSize);
     frame->Show(true);
     return true;
 }

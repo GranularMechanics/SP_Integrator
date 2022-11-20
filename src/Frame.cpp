@@ -1,6 +1,11 @@
 #include <wx/wx.h>
+#include <wx/graphics.h>
 #include <wx/listbook.h>
+#include <wx/splitter.h>
+#include <wx/listctrl.h>
 #include "Frame.h"
+#include "Model.h"
+#include "Integrator.h"
 #include "drawingcanvas.h"
 #include "chartcontrol.h"
 
@@ -9,7 +14,7 @@ EVT_MENU(ID_New, Frame::OnNew)
 EVT_MENU(ID_Open, Frame::OnOpen)
 EVT_MENU(ID_Save, Frame::OnSave)
 EVT_MENU(ID_Save_As, Frame::OnSaveAs)
-EVT_MENU(ID_Model, Frame::OnModel)
+EVT_MENU(ID_MCC, Frame::OnMCC)
 wxEND_EVENT_TABLE()
 
 Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
@@ -19,7 +24,7 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     wxMenuBar* menuBar = new wxMenuBar;
     SetMenuBar(menuBar);
 
-    // add menu for File operations
+    // add dropdown menu for File operations
     wxMenu* menuFile = new wxMenu;
     menuBar->Append(menuFile, "&File");
     menuFile->Append(ID_New, "&New", "Open a new file");
@@ -31,38 +36,41 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     menuFile->AppendSeparator();
     menuFile->Append(wxID_EXIT);
 
-    // add menu for View operations
+    // add dropdown menu for View operations
     wxMenu* menuView = new wxMenu;
     menuBar->Append(menuView, "&View");
     menuView->Append(ID_Loading, "&Loading", "Select a Constitutive Model");
     menuView->Append(ID_2DPlots, "&2D Plots", "Select a Constitutive Model");
     menuView->Append(ID_3DPlot, "&3D Plot", "Select a Constitutive Model");
 
-    // add menu for Model operations
+    // add dropdown menu for Model operations
     wxMenu* menuModel = new wxMenu;
     menuBar->Append(menuModel, "&Model");
-    menuModel->Append(ID_Model, "&Model", "Select a Constitutive Model");
+    menuModel->Append(ID_MCC, "&MCC", "Modified Cam Clay");
+    menuModel->Append(ID_MCC_H, "&MCC+H", "Modified Cam Clay with Hvorslev");
+    menuModel->Append(ID_OCC, "&OCC", "Original Cam Clay");
+    menuModel->Append(ID_OCC_H, "&OCC+H", "Original Cam Clay with Hvorslev");
+    menuModel->Append(ID_M_C, "&Mohr-C", "Mohr-Coulomb");
+    menuModel->Append(ID_M_C_C, "&Mohr-C+Cap", "Mohr-Coulomb with Cap");
 
-    // add menu for Settings
+    // add dropdown menu for Settings
     wxMenu* menuSettings = new wxMenu;
     menuBar->Append(menuSettings, "&Settings");
     menuSettings->Append(ID_Controls, "&Controls", "Integration Controls");
     menuSettings->Append(ID_Methods, "&Methods", "Integration Methods");
     menuSettings->Append(ID_Tolerances, "&Tolerances", "Integration Tolerances");
 
-    // add menu for Data
+    // add dropdown menu for Data
     wxMenu* menuData = new wxMenu;
     menuBar->Append(menuData, "&Data");
     menuData->Append(ID_Data, "&Data Files", "Integration Data");
 
-    // add menu for Help operations
+    // add dropdown menu for Help operations
     wxMenu* menuHelp = new wxMenu;
     menuBar->Append(menuHelp, "&Help");
     menuHelp->Append(ID_Documentation, "&Documentation", "Online Documentation");
     menuHelp->Append(wxID_ABOUT);
 
-    // add a toolbar
-    m_ToolBar = this->CreateToolBar(wxTB_HORIZONTAL, wxID_ANY);
     // add the Status Bar
     CreateStatusBar();
     SetStatusText("Welcome to the Lassonde Integrator");
@@ -72,89 +80,107 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     Bind(wxEVT_MENU, &Frame::OnSave, this, ID_Save);
     Bind(wxEVT_MENU, &Frame::OnSaveAs, this, ID_Save_As);
     Bind(wxEVT_MENU, &Frame::OnExit, this, wxID_EXIT);
-    Bind(wxEVT_MENU, &Frame::OnModel, this, ID_Model);
+    Bind(wxEVT_MENU, &Frame::OnMCC, this, ID_MCC);
     Bind(wxEVT_MENU, &Frame::OnAbout, this, wxID_ABOUT);
 
-    auto tabs = new wxListbook(this, wxID_ANY, wxDefaultPosition, this->FromDIP(wxSize(640, 480)), wxNB_TOP);
-    tabs->SetInternalBorder(0);
+    //-------------------------------------------------------------------------
+    // add a toolbar
+    m_ToolBar = this->CreateToolBar(wxTB_HORIZONTAL, wxID_ANY);
 
-    wxSizer *mainSizer = new wxBoxSizer(wxVERTICAL);
-    mainSizer->Add(tabs, 1, wxEXPAND);
+    //-------------------------------------------------------------------------
+    // Frame Design
+    wxBoxSizer* sizerMstr = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* sizerMain = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* sizerLeft = new wxBoxSizer(wxVERTICAL);
+    wxBoxSizer* sizerRght = new wxBoxSizer(wxVERTICAL);
+    wxPanel* mainPanel = new wxPanel(this);
+    wxPanel* leftPanel = new wxPanel(mainPanel);
+    wxPanel* rghtPanel = new wxPanel(mainPanel);
+    wxPanel* ltopPanel = new wxPanel(leftPanel);
+    wxPanel* lbtmPanel = new wxPanel(leftPanel);
+    wxPanel* rtopPanel = new wxPanel(rghtPanel);
+    wxPanel* rbtmPanel = new wxPanel(rghtPanel);
+    leftPanel->SetBackgroundColour(wxColor(200, 100, 100));
+    rghtPanel->SetBackgroundColour(wxColor(100, 200, 100));
+    ltopPanel->SetBackgroundColour(wxColor( 50, 120, 120));
+    lbtmPanel->SetBackgroundColour(wxColor( 50, 120,  50));
+    rtopPanel->SetBackgroundColour(wxColor(120, 120,  50));
+    rbtmPanel->SetBackgroundColour(wxColor(120,  50, 120));
 
-    wxSizer *sizer = new wxBoxSizer(wxVERTICAL);
+    // graphics on the frame itself
+    auto graphic1 = new wxListbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+    graphic1->SetInternalBorder(0);
+    chart1 = new ChartControl(graphic1, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    chart1->title = "First Chart";
+    chart1->values = { 0.34, -0.17, 0.98, 0.33 };
+    graphic1->AddPage(chart1, "1st Chart");
+    chart2 = new ChartControl(graphic1, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    chart2->title = "Second Chart";
+    chart2->values = { -0.34, 0.17, 0.98, 0.33 };
+    graphic1->AddPage(chart2, "2nd Chart");
+    graphic1->SetSelection(1);
+    sizerMstr->Add(graphic1, 1, wxEXPAND | wxALL, 3);
 
-    wxPanel *drawingPaneWithButtons = new wxPanel(tabs);
-    auto buttonPanel = createButtonPanel(drawingPaneWithButtons);
-    canvas = new DrawingCanvas(drawingPaneWithButtons, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    canvas->Bind(CANVAS_RECT_ADDED, &Frame::OnRectAdded, this);
-    canvas->Bind(CANVAS_RECT_REMOVED, &Frame::OnRectRemoved, this);
+    auto graphic2 = new wxListbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+    graphic2->SetInternalBorder(0);
+    chart3 = new ChartControl(graphic2, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    chart3->title = "Important Chart 3";
+    chart3->values = { 0.34, -0.17, 0.98, 0.33 };
+    graphic2->AddPage(chart3, "3rd Chart");
+    chart4 = new ChartControl(graphic2, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    chart4->title = "Less Important Chart";
+    chart4->values = { -0.34, 0.17, 0.98, 0.33 };
+    graphic2->AddPage(chart4, "4th Chart");
+    graphic2->SetSelection(1);
+    sizerMstr->Add(graphic2, 1, wxEXPAND | wxALL, 3);
 
-    rectCount = canvas->getObjectCount();
+    sizerMstr->Add(mainPanel, 1, wxEXPAND | wxALL, 1);
 
-    sizer->Add(buttonPanel, 0, wxEXPAND | wxALL, 0);
-    sizer->Add(canvas, 1, wxEXPAND | wxALL, 0);
+    sizerLeft->Add(ltopPanel, 1, wxEXPAND | wxALL, 2);
+    sizerLeft->Add(lbtmPanel, 1, wxEXPAND | wxALL, 2);
+    sizerRght->Add(rtopPanel, 1, wxEXPAND | wxALL, 2);
+    sizerRght->Add(rbtmPanel, 1, wxEXPAND | wxALL, 2);
+    sizerMain->Add(leftPanel, 1, wxEXPAND | wxALL, 1);
+    sizerMain->Add(rghtPanel, 1, wxEXPAND | wxALL, 1);
 
-    drawingPaneWithButtons->SetSizerAndFit(sizer);
+    // Model parameters
+    parameters = new wxListView(ltopPanel);
+    parameters->AppendColumn("Label");
+    parameters->AppendColumn("Value");
+    parameters->SetColumnWidth(0, 100);
+    parameters->SetColumnWidth(1, 100);
+    auto index = parameters->GetItemCount();
 
-    tabs->AddPage(drawingPaneWithButtons, "Rectangles");
+    Model* model = new Model();
+    for (const auto& e : model->getParameters()) {
+        parameters->InsertItem(index, e.label);
+        parameters->SetItem(index, 1, std::to_string(e.value));
+    }
+    delete model;
 
-    chart = new ChartControl(tabs, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    chart->title = "Important Chart";
-    chart->values = {0.34, -0.17, 0.98, 0.33};
+    // Settings
+    settings = new wxListView(rtopPanel);
+    settings->AppendColumn("Label");
+    settings->AppendColumn("Value");
+    settings->SetColumnWidth(0, 100);
+    settings->SetColumnWidth(1, 100);
+    index = settings->GetItemCount();
 
-    tabs->AddPage(chart, "Chart");
-    tabs->SetSelection(1);
+    Integrator* integrator = new Integrator();
+    for (const auto& e : integrator->getSettings()) {
+        settings->InsertItem(index, e.label);
+        settings->SetItem(index, 1, std::to_string(e.value));
+    }
+    delete integrator;
 
-    this->SetSizerAndFit(mainSizer);
+    rghtPanel->SetSizerAndFit(sizerRght);
+    leftPanel->SetSizerAndFit(sizerLeft);
+    mainPanel->SetSizerAndFit(sizerMain);
+    this->SetSizerAndFit(sizerMstr);
+    sizerMstr->SetSizeHints(this);
 
+    Centre();
     SetStatusText("Ready", 0);
-}
-
-void Frame::OnAddButtonClick(wxCommandEvent &event)
-{
-    std::uniform_int_distribution sizeDistrib(this->FromDIP(50), this->FromDIP(100));
-    std::uniform_int_distribution xDistrib(0, canvas->GetSize().GetWidth());
-    std::uniform_int_distribution yDistrib(0, canvas->GetSize().GetHeight());
-    std::uniform_real_distribution angleDistrib(0.0, M_PI * 2.0);
-
-    std::uniform_int_distribution colorDistrib(0, 0xFFFFFF);
-
-    rectCount++;
-    canvas->addRect(sizeDistrib(randomGen), sizeDistrib(randomGen), xDistrib(randomGen), yDistrib(randomGen),
-                    angleDistrib(randomGen), wxColour(colorDistrib(randomGen)), "Rect #" + std::to_string(rectCount));
-}
-
-void Frame::OnRemoveButtonClick(wxCommandEvent &event)
-{
-    canvas->removeTopRect();
-}
-
-void Frame::OnRectAdded(wxCommandEvent &event)
-{
-    SetStatusText("Rect named " + event.GetString() + " added!", 0);
-}
-
-void Frame::OnRectRemoved(wxCommandEvent &event)
-{
-    SetStatusText("Rect named " + event.GetString() + " REMOVED!", 0);
-}
-
-wxPanel *Frame::createButtonPanel(wxWindow *parent)
-{
-    wxPanel *panel = new wxPanel(parent);
-    wxButton *addRectButton = new wxButton(panel, wxID_ANY, "Add Rect");
-    wxButton *removeLastButton = new wxButton(panel, wxID_ANY, "Remove Top");
-
-    wxSizer *sizer = new wxBoxSizer(wxHORIZONTAL);
-    sizer->Add(addRectButton, 0, wxEXPAND | wxALL, 3);
-    sizer->Add(removeLastButton, 0, wxEXPAND | wxALL, 3);
-
-    panel->SetSizer(sizer);
-
-    addRectButton->Bind(wxEVT_BUTTON, &Frame::OnAddButtonClick, this);
-    removeLastButton->Bind(wxEVT_BUTTON, &Frame::OnRemoveButtonClick, this);
-
-    return panel;
 }
 
 void Frame::OnNew(wxCommandEvent& event)
@@ -168,14 +194,10 @@ void Frame::OnOpen(wxCommandEvent& event)
 
 void Frame::OnSave(wxCommandEvent& event)
 {
-    //ModelFrame* model = new ModelFrame(this, "Model");
-    //model->Show();
-    //event.Skip();
 }
 
 void Frame::OnSaveAs(wxCommandEvent& event)
 {
-    //Pane* pane = new Pane(this);
 }
 
 void Frame::OnExit(wxCommandEvent& event)
@@ -184,10 +206,28 @@ void Frame::OnExit(wxCommandEvent& event)
     event.Skip();
 }
 
-void Frame::OnModel(wxCommandEvent& event)
+void Frame::OnMCC(wxCommandEvent& event)
 {
-    //ModelFrame* model = new ModelFrame(this, "Model");
-    //model->Show();
+}
+
+void Frame::OnMCC_H(wxCommandEvent& event)
+{
+}
+
+void Frame::OnOCC(wxCommandEvent& event)
+{
+}
+
+void Frame::OnOCC_H(wxCommandEvent& event)
+{
+}
+
+void Frame::OnMohrC(wxCommandEvent& event)
+{
+}
+
+void Frame::OnMohrCCap(wxCommandEvent& event)
+{
 }
 
 void Frame::OnAbout(wxCommandEvent& event)

@@ -28,8 +28,10 @@ void ChartControl::OnPaint(wxPaintEvent &evt)
         gc->GetTextExtent(this->title, &tw, &th);
 
         const double titleTopBottomMinimumMargin = this->FromDIP(10);
+        
+        auto size = GetSize();
 
-        wxRect2DDouble fullArea{0, 0, static_cast<double>(GetSize().GetWidth()), static_cast<double>(GetSize().GetHeight())};
+        wxRect2DDouble fullArea{0, 0, static_cast<double>(size.GetWidth()), static_cast<double>(size.GetHeight())};
 
         const double marginX = fullArea.GetSize().GetWidth() / 8.0;
         const double marginTop = std::max(fullArea.GetSize().GetHeight() / 8.0, titleTopBottomMinimumMargin * 2.0 + th);

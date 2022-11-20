@@ -14,7 +14,7 @@ set(wxWidgets_USE_STATIC 1)
 
 find_package(wxWidgets REQUIRED)
 
-set(SRCS main.cpp Frame.cpp drawingcanvas.cpp chartcontrol.cpp)
+set(SRCS main.cpp Frame.cpp Model.cpp Integrator.cpp ChartControl.cpp)
 
 include(${wxWidgets_USE_FILE})
 
