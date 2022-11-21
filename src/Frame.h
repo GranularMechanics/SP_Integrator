@@ -30,6 +30,7 @@ class Frame : public wxFrame
     void OnMohrCCap(wxCommandEvent& event);
     //void OnData(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
+    void SetupMenuBar();
 
 public:
     Frame(const wxString &title, const wxPoint &pos, const wxSize &size);

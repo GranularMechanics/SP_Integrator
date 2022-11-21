@@ -20,58 +20,9 @@ wxEND_EVENT_TABLE()
 Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     : wxFrame(nullptr, wxID_ANY, title, pos, size)
 {
-    // add a menu bar
-    wxMenuBar* menuBar = new wxMenuBar;
-    SetMenuBar(menuBar);
 
-    // add dropdown menu for File operations
-    wxMenu* menuFile = new wxMenu;
-    menuBar->Append(menuFile, "&File");
-    menuFile->Append(ID_New, "&New", "Open a new file");
-    menuFile->Append(ID_Open, "&Open", "Open an existing file");
-    menuFile->Append(ID_Save, "&Save", "Save to file");
-    menuFile->Append(ID_Save_As, "&Save As", "Save to a new file");
-    menuFile->AppendSeparator();
-    menuFile->Append(ID_Print, "&Print", "Save to file");
-    menuFile->AppendSeparator();
-    menuFile->Append(wxID_EXIT);
-
-    // add dropdown menu for View operations
-    wxMenu* menuView = new wxMenu;
-    menuBar->Append(menuView, "&View");
-    menuView->Append(ID_Loading, "&Loading", "Select a Constitutive Model");
-    menuView->Append(ID_2DPlots, "&2D Plots", "Select a Constitutive Model");
-    menuView->Append(ID_3DPlot, "&3D Plot", "Select a Constitutive Model");
-
-    // add dropdown menu for Model operations
-    wxMenu* menuModel = new wxMenu;
-    menuBar->Append(menuModel, "&Model");
-    menuModel->Append(ID_MCC, "&MCC", "Modified Cam Clay");
-    menuModel->Append(ID_MCC_H, "&MCC+H", "Modified Cam Clay with Hvorslev");
-    menuModel->Append(ID_OCC, "&OCC", "Original Cam Clay");
-    menuModel->Append(ID_OCC_H, "&OCC+H", "Original Cam Clay with Hvorslev");
-    menuModel->Append(ID_M_C, "&Mohr-C", "Mohr-Coulomb");
-    menuModel->Append(ID_M_C_C, "&Mohr-C+Cap", "Mohr-Coulomb with Cap");
-
-    // add dropdown menu for Settings
-    wxMenu* menuSettings = new wxMenu;
-    menuBar->Append(menuSettings, "&Settings");
-    menuSettings->Append(ID_Controls, "&Controls", "Integration Controls");
-    menuSettings->Append(ID_Methods, "&Methods", "Integration Methods");
-    menuSettings->Append(ID_Tolerances, "&Tolerances", "Integration Tolerances");
-
-    // add dropdown menu for Data
-    wxMenu* menuData = new wxMenu;
-    menuBar->Append(menuData, "&Data");
-    menuData->Append(ID_Data, "&Data Files", "Integration Data");
-
-    // add dropdown menu for Help operations
-    wxMenu* menuHelp = new wxMenu;
-    menuBar->Append(menuHelp, "&Help");
-    menuHelp->Append(ID_Documentation, "&Documentation", "Online Documentation");
-    menuHelp->Append(wxID_ABOUT);
-
-    // add the Status Bar
+    SetupMenuBar();
+    m_ToolBar = this->CreateToolBar(wxTB_HORIZONTAL, wxID_ANY);
     CreateStatusBar();
     SetStatusText("Welcome to the Lassonde Integrator");
 
@@ -84,13 +35,9 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     Bind(wxEVT_MENU, &Frame::OnAbout, this, wxID_ABOUT);
 
     //-------------------------------------------------------------------------
-    // add a toolbar
-    m_ToolBar = this->CreateToolBar(wxTB_HORIZONTAL, wxID_ANY);
-
-    //-------------------------------------------------------------------------
     // Frame Design
-    wxBoxSizer* sizerMstr = new wxBoxSizer(wxVERTICAL);
-    wxBoxSizer* sizerMain = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* sizerMstr = new wxBoxSizer(wxHORIZONTAL);
+    wxBoxSizer* sizerMain = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* sizerLeft = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* sizerRght = new wxBoxSizer(wxVERTICAL);
     wxPanel* mainPanel = new wxPanel(this);
@@ -181,6 +128,62 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
 
     Centre();
     SetStatusText("Ready", 0);
+}
+
+void Frame::SetupMenuBar() {
+
+    // add dropdown menu for File operations
+    wxMenu* menuFile = new wxMenu;
+    menuFile->Append(ID_New, "&New", "Open a new file");
+    menuFile->Append(ID_Open, "&Open", "Open an existing file");
+    menuFile->Append(ID_Save, "&Save", "Save to file");
+    menuFile->Append(ID_Save_As, "&Save As", "Save to a new file");
+    menuFile->AppendSeparator();
+    menuFile->Append(ID_Print, "&Print", "Save to file");
+    menuFile->AppendSeparator();
+    menuFile->Append(wxID_EXIT);
+
+    // add dropdown menu for View operations
+    wxMenu* menuView = new wxMenu;
+    menuView->Append(ID_Loading, "&Loading", "Select a Constitutive Model");
+    menuView->Append(ID_2DPlots, "&2D Plots", "Select a Constitutive Model");
+    menuView->Append(ID_3DPlot, "&3D Plot", "Select a Constitutive Model");
+
+    // add dropdown menu for Model operations
+    wxMenu* menuModel = new wxMenu;
+    menuModel->Append(ID_MCC, "&MCC", "Modified Cam Clay");
+    menuModel->Append(ID_MCC_H, "&MCC+H", "Modified Cam Clay with Hvorslev");
+    menuModel->Append(ID_OCC, "&OCC", "Original Cam Clay");
+    menuModel->Append(ID_OCC_H, "&OCC+H", "Original Cam Clay with Hvorslev");
+    menuModel->Append(ID_M_C, "&Mohr-C", "Mohr-Coulomb");
+    menuModel->Append(ID_M_C_C, "&Mohr-C+Cap", "Mohr-Coulomb with Cap");
+
+    // add dropdown menu for Settings
+    wxMenu* menuSettings = new wxMenu;
+    menuSettings->Append(ID_Controls, "&Controls", "Integration Controls");
+    menuSettings->Append(ID_Methods, "&Methods", "Integration Methods");
+    menuSettings->Append(ID_Tolerances, "&Tolerances", "Integration Tolerances");
+
+    // add dropdown menu for Data
+    wxMenu* menuData = new wxMenu;
+    menuData->Append(ID_Data, "&Data Files", "Integration Data");
+
+    // add dropdown menu for Help operations
+    wxMenu* menuHelp = new wxMenu;
+    menuHelp->Append(ID_Documentation, "&Documentation", "Online Documentation");
+    menuHelp->Append(wxID_ABOUT);
+
+    // create the menu bar
+    wxMenuBar* menuBar = new wxMenuBar;
+    menuBar->Append(menuFile, "&File");
+    menuBar->Append(menuView, "&View");
+    menuBar->Append(menuModel, "&Model");
+    menuBar->Append(menuSettings, "&Settings");
+    menuBar->Append(menuData, "&Data");
+    menuBar->Append(menuHelp, "&Help");
+
+    // add the menu bar
+    SetMenuBar(menuBar);
 }
 
 void Frame::OnNew(wxCommandEvent& event)
