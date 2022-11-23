@@ -6,6 +6,7 @@
 #include <random>
 
 class ChartControl;
+struct KeyValue;
 
 class Frame : public wxFrame
 {
@@ -31,7 +32,8 @@ class Frame : public wxFrame
     //void OnData(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
     void SetupMenuBar();
-
+    void SetupListView(wxPanel* p, const wxString& label, const std::vector<KeyValue>& keyValue);
+    void SetupForm();
 public:
     Frame(const wxString &title, const wxPoint &pos, const wxSize &size);
     ~Frame();

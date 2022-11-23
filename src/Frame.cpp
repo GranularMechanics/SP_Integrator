@@ -37,134 +37,64 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     //-------------------------------------------------------------------------
     // Frame Design
     wxBoxSizer* sizerMstr = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer* sizerMain = new wxBoxSizer(wxVERTICAL);
-    wxBoxSizer* sizerLeft = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* sizerRght = new wxBoxSizer(wxVERTICAL);
-    wxPanel* mainPanel = new wxPanel(this);
-    wxPanel* leftPanel = new wxPanel(mainPanel);
-    wxPanel* rghtPanel = new wxPanel(mainPanel);
-    wxPanel* ltopPanel = new wxPanel(leftPanel);
-    wxPanel* lbtmPanel = new wxPanel(leftPanel);
+    wxPanel* rghtPanel = new wxPanel(this);
     wxPanel* rtopPanel = new wxPanel(rghtPanel);
+    wxPanel* rmidPanel = new wxPanel(rghtPanel);
+    wxPanel* rlowPanel = new wxPanel(rghtPanel);
     wxPanel* rbtmPanel = new wxPanel(rghtPanel);
-    leftPanel->SetBackgroundColour(wxColor(200, 100, 100));
-    rghtPanel->SetBackgroundColour(wxColor(100, 200, 100));
-    ltopPanel->SetBackgroundColour(wxColor( 50, 120, 120));
-    lbtmPanel->SetBackgroundColour(wxColor( 50, 120,  50));
+    this->SetBackgroundColour(wxColor(200, 200, 200));
+    rghtPanel->SetBackgroundColour(wxColor(200, 200, 200));
     rtopPanel->SetBackgroundColour(wxColor(120, 120,  50));
-    rbtmPanel->SetBackgroundColour(wxColor(120,  50, 120));
+    rmidPanel->SetBackgroundColour(wxColor( 50, 120,  50));
+    rlowPanel->SetBackgroundColour(wxColor(120,  50, 120));
+    rbtmPanel->SetBackgroundColour(wxColor(120, 50, 120));
 
-    // graphics on the frame itself
-    auto graphic1 = new wxListbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
-    graphic1->SetInternalBorder(0);
-    chart1 = new ChartControl(graphic1, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    chart1->Set("1st Chart", "Top Left", "Top Right", "Bottom Left", "Bottom Right");
-    chart1->values = { 0.34, -0.17, 0.98, 0.33 };
-    wxVector<double> v1;
-    v1.push_back(0.34);
-    v1.push_back(-0.17);
-    v1.push_back(-0.98);
-    v1.push_back(0.33);
-    wxVector<double> v2;
-    v2.push_back(0.34);
-    v2.push_back(-0.17);
-    v2.push_back(0.98);
-    v2.push_back(0.33);
-    wxVector<double> v3;
-    v3.push_back(-0.34);
-    v3.push_back(-0.17);
-    v3.push_back(0.98);
-    v3.push_back(0.33);
-    wxVector<double> v4;
-    v4.push_back(-0.34);
-    v4.push_back(-0.17);
-    v4.push_back(0.98);
-    v4.push_back(-0.33);
+    // graphics on the frame's client area itself
+    Integrator* integrator = new Integrator();
+    auto book = new wxListbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+    book->SetInternalBorder(0);
+    chart1 = new ChartControl(book, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    chart1->Set("p, q, v, eq", "q vs p", "q vs eq", "v vs p", "v vs eq");
+    auto v1 = integrator->Get("p");
+    auto v2 = integrator->Get("q");
+    auto v3 = integrator->Get("eq");
+    auto v4 = integrator->Get("v");
     chart1->Set(v1, v2, v3, v4);
-    graphic1->AddPage(chart1, "1st Chart");
-    chart2 = new ChartControl(graphic1, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    chart2->Set("2nd Chart", "Top Left", "Top Right", "Bottom Left", "Bottom Right");
-    chart2->values = { -0.34, 0.17, 0.98, 0.33 };
-    v1.clear();
-    v1.push_back(-0.17);
-    v1.push_back(0.34);
-    v1.push_back(0.33);
-    v1.push_back(-0.98);
-    v2.clear();
-    v2.push_back(0.34);
-    v2.push_back(0.98);
-    v2.push_back(-0.17);
-    v2.push_back(0.33);
-    v3.clear();
-    v3.push_back(0.33);
-    v3.push_back(-0.34);
-    v3.push_back(-0.17);
-    v3.push_back(0.98);
-    v4.clear();
-    v4.push_back(0.98);
-    v4.push_back(-0.34);
-    v4.push_back(-0.17);
-    v4.push_back(-0.33);
-    chart2->Set(v1, v2, v3, v4);
-    graphic1->AddPage(chart2, "2nd Chart");
-    graphic1->SetSelection(1);
-    sizerMstr->Add(graphic1, 1, wxEXPAND | wxALL, 3);
-
-    //auto graphic2 = new wxListbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
-    //graphic2->SetInternalBorder(0);
-    //chart3 = new ChartControl(graphic2, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    //chart3->title = "Important Chart 3";
-    //chart3->values = { 0.34, -0.17, 0.98, 0.33 };
-    //graphic2->AddPage(chart3, "3rd Chart");
-    //chart4 = new ChartControl(graphic2, wxID_ANY, wxDefaultPosition, wxDefaultSize);
-    //chart4->title = "Less Important Chart";
-    //chart4->values = { -0.34, 0.17, 0.98, 0.33 };
-    //graphic2->AddPage(chart4, "4th Chart");
-    //graphic2->SetSelection(1);
-    //sizerMstr->Add(graphic2, 1, wxEXPAND | wxALL, 3);
-
-    sizerMstr->Add(mainPanel, 1, wxEXPAND | wxALL, 1);
-
-    sizerLeft->Add(ltopPanel, 1, wxEXPAND | wxALL, 2);
-    sizerLeft->Add(lbtmPanel, 1, wxEXPAND | wxALL, 2);
-    sizerRght->Add(rtopPanel, 1, wxEXPAND | wxALL, 2);
-    sizerRght->Add(rbtmPanel, 1, wxEXPAND | wxALL, 2);
-    sizerMain->Add(leftPanel, 1, wxALIGN_RIGHT | wxALL, 1);
-    sizerMain->Add(rghtPanel, 1, wxALIGN_RIGHT | wxALL, 1);
+    book->AddPage(chart1, "p, q, v, eq");
+    chart2 = new ChartControl(book, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    chart2->Set("p, q", "q vs p");
+    chart2->Set(v1, v2);
+    book->AddPage(chart2, "q vs p");
+    book->SetSelection(1);
+    sizerMstr->Add(book, 1, wxEXPAND | wxALL, 3);
 
     // Model parameters
-    parameters = new wxListView(ltopPanel);
-    parameters->AppendColumn("Label");
-    parameters->AppendColumn("Value");
-    parameters->SetColumnWidth(0, 100);
-    parameters->SetColumnWidth(1, 100);
-    auto index = parameters->GetItemCount();
-
     Model* model = new Model();
-    for (const auto& e : model->getParameters()) {
-        parameters->InsertItem(index, e.label);
-        parameters->SetItem(index, 1, std::to_string(e.value));
-    }
+    SetupListView(rtopPanel, "Parameter", model->GetParameters());
+    sizerRght->Add(rtopPanel, 0, wxEXPAND | wxALL, 2);
     delete model;
 
-    // Settings
-    settings = new wxListView(rtopPanel);
-    settings->AppendColumn("Label");
-    settings->AppendColumn("Value");
-    settings->SetColumnWidth(0, 100);
-    settings->SetColumnWidth(1, 100);
-    index = settings->GetItemCount();
+    auto minChartSize = 2.0 * rtopPanel->GetBestSize();
+    book->SetMinSize(minChartSize);
 
-    Integrator* integrator = new Integrator();
-    for (const auto& e : integrator->getSettings()) {
-        settings->InsertItem(index, e.label);
-        settings->SetItem(index, 1, std::to_string(e.value));
-    }
+    // Settings
+    SetupListView(rmidPanel, "Setting", integrator->GetSettings());
+    sizerRght->Add(rmidPanel, 0, wxEXPAND | wxALL, 2);
+
+    // Initial State
+    SetupListView(rlowPanel, "Initial State", integrator->GetInitialState());
+    sizerRght->Add(rlowPanel, 1, wxEXPAND | wxALL, 2);
+
+    // Loading
+    SetupListView(rbtmPanel, "Loading", integrator->GetLoading());
+    sizerRght->Add(rbtmPanel, 1, wxEXPAND | wxALL, 2);
+
     delete integrator;
 
     rghtPanel->SetSizerAndFit(sizerRght);
-    leftPanel->SetSizerAndFit(sizerLeft);
-    mainPanel->SetSizerAndFit(sizerMain);
+
+    sizerMstr->Add(rghtPanel, 0, wxEXPAND | wxALL, 2);
     this->SetSizerAndFit(sizerMstr);
     sizerMstr->SetSizeHints(this);
 
@@ -226,6 +156,41 @@ void Frame::SetupMenuBar() {
 
     // add the menu bar
     SetMenuBar(menuBar);
+}
+
+void Frame::SetupListView(wxPanel* p, const wxString& label, const std::vector<KeyValue>& keyValue) {
+
+    auto list = new wxListView(p);
+    list->AppendColumn(label);
+    list->AppendColumn("Value");
+    list->SetColumnWidth(0, 100);
+    list->SetColumnWidth(1, 100);
+    auto index = list->GetItemCount();
+
+    for (const auto& e : keyValue) {
+        list->InsertItem(index, e.label);
+        list->SetItem(index, 1, std::to_string(e.value));
+    }
+}
+
+void Frame::SetupForm() {
+    auto sizer = new wxBoxSizer(wxVERTICAL);
+    auto centeringSizer = new wxBoxSizer(wxHORIZONTAL);
+    auto panel = new wxPanel(this);
+    auto panelSizer = new wxBoxSizer(wxVERTICAL);
+    auto nameLabel = new wxStaticText(panel, wxID_ANY, "Setting");
+    auto choice = wxChoice();
+    auto userNameField = new wxTextCtrl(panel, wxID_ANY, "", wxDefaultPosition, wxSize(FromDIP(300), wxDefaultSize.y));
+    std::vector<wxWindow*> formItems{ nameLabel, userNameField };
+
+    for (auto item : formItems) {
+        panelSizer->Add(item, 0, wxEXPAND | wxALL, FromDIP(3));
+    }
+
+    panel->SetSizerAndFit(panelSizer);
+    centeringSizer->Add(panel, 1, wxALIGN_CENTER | wxALL, FromDIP(10));
+    sizer->Add(centeringSizer, 1, wxEXPAND);
+    SetSizerAndFit(sizer);
 }
 
 void Frame::OnNew(wxCommandEvent& event)

@@ -1,10 +1,11 @@
-#include "chartcontrol.h"
+#include "ChartControl.h"
 #include <wx/settings.h>
 #include <wx/graphics.h>
 #include <wx/dcbuffer.h>
 
 // wxFULL_REPAINT_ON_RESIZE needed for Windows
-ChartControl::ChartControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size) : wxWindow(parent, id, pos, size, wxFULL_REPAINT_ON_RESIZE)
+ChartControl::ChartControl(wxWindow *parent, wxWindowID id, const wxPoint &pos, const wxSize &size) : 
+    wxWindow(parent, id, pos, size, wxFULL_REPAINT_ON_RESIZE)
 {
     this->SetBackgroundStyle(wxBG_STYLE_PAINT); // needed for windows
 
@@ -19,15 +20,29 @@ void ChartControl::Set(const wxString& title_, const wxString& lt, const wxStrin
     trb = rb;
 }
 
+void ChartControl::Set(const wxString& title_, const wxString& lt) {
+    title = title_;
+    tlt = lt;
+}
+
 void ChartControl::Set(
-    const wxVector<double>& values_ltx,
-    const wxVector<double>& values_lty,
-    const wxVector<double>& values_rbx,
-    const wxVector<double>& values_rby) {
+    const std::vector<double>& values_ltx,
+    const std::vector<double>& values_lty,
+    const std::vector<double>& values_rbx,
+    const std::vector<double>& values_rby) {
     ltx = values_ltx;
     lty = values_lty;
     rbx = values_rbx;
     rby = values_rby;
+    quad = true;
+}
+
+void ChartControl::Set(
+    const std::vector<double>& values_ltx,
+    const std::vector<double>& values_lty) {
+    ltx = values_ltx;
+    lty = values_lty;
+    quad = false;
 }
 
 void ChartControl::OnPaint(wxPaintEvent& evt)
@@ -36,7 +51,7 @@ void ChartControl::OnPaint(wxPaintEvent& evt)
     dc.Clear();
     wxGraphicsContext* gc = wxGraphicsContext::Create(dc);
 
-    if (gc && values.size() > 0)
+    if (gc)
     {
         wxFont titleFont = wxFont(wxNORMAL_FONT->GetPointSize() * 1.5,
             wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
@@ -59,21 +74,29 @@ void ChartControl::OnPaint(wxPaintEvent& evt)
 
         gc->SetFont(subtitleFont, wxSystemSettings::GetAppearance().IsDark() ? *wxWHITE : *wxBLACK);
 
-        auto halfWidth = static_cast<double>(GetSize().GetWidth()) / 2.0;
-        auto halfHeight = static_cast<double>(GetSize().GetHeight()) / 2.0;
-        auto rightShift = 0.3 * marginX;
+        if (quad) {
+            auto halfWidth = static_cast<double>(GetSize().GetWidth()) / 2.0;
+            auto halfHeight = static_cast<double>(GetSize().GetHeight()) / 2.0;
 
-        wxRect2DDouble leftTopArea{ 0.0, th, halfWidth, halfHeight };
-        DrawComponent(dc, gc, leftTopArea, tlt, ltx, lty, false);
+            wxRect2DDouble leftTopArea{ marginX / 2.0, th, halfWidth, halfHeight };
+            DrawComponent(dc, gc, leftTopArea, tlt, ltx, lty, false, true);
 
-        wxRect2DDouble rightTopArea{ halfWidth, th, halfWidth, halfHeight };
-        DrawComponent(dc, gc, rightTopArea, trt, rbx, lty, true);
+            wxRect2DDouble rightTopArea{ halfWidth, th, halfWidth, halfHeight };
+            DrawComponent(dc, gc, rightTopArea, trt, rbx, lty, false, false);
 
-        wxRect2DDouble leftBottomArea{ 0.0, halfHeight, halfWidth, halfHeight };
-        DrawComponent(dc, gc, leftBottomArea, tlb, rbx, rby, false);
+            wxRect2DDouble leftBottomArea{ marginX / 2.0, halfHeight, halfWidth, halfHeight };
+            DrawComponent(dc, gc, leftBottomArea, tlb, rbx, rby, true, true);
 
-        wxRect2DDouble rightBottomArea{ halfWidth, halfHeight, halfWidth, halfHeight };
-        DrawComponent(dc, gc, rightBottomArea, trb, rbx, rby, true);
+            wxRect2DDouble rightBottomArea{ halfWidth, halfHeight, halfWidth, halfHeight };
+            DrawComponent(dc, gc, rightBottomArea, trb, rbx, rby, true, false);
+        }
+        else {
+            auto Width = static_cast<double>(GetSize().GetWidth());
+            auto Height = static_cast<double>(GetSize().GetHeight());
+
+            wxRect2DDouble leftTopArea{ 0.0, th, Width, Height };
+            DrawComponent(dc, gc, leftTopArea, tlt, ltx, lty, true, true);
+        }
 
         delete gc;
     }
@@ -84,8 +107,9 @@ void ChartControl::DrawComponent(
     wxGraphicsContext* gc, 
     wxRect2DDouble chartArea, 
     const wxString& chartTitle,
-    const wxVector<double>& x, 
-    const wxVector<double>& y,
+    const std::vector<double>& x,
+    const std::vector<double>& y,
+    bool drawXLabels,
     bool drawYLabels) {
 
     auto values = y;
@@ -101,7 +125,7 @@ void ChartControl::DrawComponent(
     chartArea.Inset(marginX, marginTop, marginX, marginBottom);
 
     wxFont subtitleFont = wxFont(wxNORMAL_FONT->GetPointSize(),
-        wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_MEDIUM);
+        wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
 
     gc->SetFont(subtitleFont, wxSystemSettings::GetAppearance().IsDark() ? *wxWHITE : *wxBLACK);
 
@@ -184,14 +208,16 @@ void ChartControl::DrawComponent(
         wxPoint2DDouble linePoints[] = { lineStartPoint, lineEndPoint };
         gc->StrokeLines(2, linePoints);
 
-        double valueAtLineX = normalizedToValue.TransformPoint({ normalizedLineX, 0 }).m_x;
+        if (drawXLabels) {
+            double valueAtLineX = normalizedToValue.TransformPoint({ normalizedLineX, 0 }).m_x;
 
-        auto text = wxString::Format("%.2f", valueAtLineX);
-        text = wxControl::Ellipsize(text, dc, wxELLIPSIZE_MIDDLE, chartArea.GetLeft() - labelsToChartAreaMargin);
+            auto text = wxString::Format("%.2f", valueAtLineX);
+            text = wxControl::Ellipsize(text, dc, wxELLIPSIZE_MIDDLE, chartArea.GetLeft() - labelsToChartAreaMargin);
 
-        double tw, th;
-        gc->GetTextExtent(text, &tw, &th);
-        gc->DrawText(text, lineStartPoint.m_x - tw / 2.0, chartArea.GetLeftBottom().m_y + th / 2.0);
+            double tw, th;
+            gc->GetTextExtent(text, &tw, &th);
+            gc->DrawText(text, lineStartPoint.m_x - tw / 2.0, chartArea.GetLeftBottom().m_y + th / 2.0);
+        }
     }
 
     // line plot
