@@ -3,23 +3,23 @@
 #include <wx/listbook.h>
 #include <wx/splitter.h>
 #include <wx/listctrl.h>
+#include <wx/wfstream.h>
+#include <wx/filedlg.h>
+#include <wx/windowptr.h>
+#include <wx/txtstrm.h>
+#include <wx/textfile.h>
 #include "Frame.h"
 #include "Model.h"
 #include "Integrator.h"
 #include "drawingcanvas.h"
 #include "chartcontrol.h"
 
-wxBEGIN_EVENT_TABLE(Frame, wxFrame)
-EVT_MENU(ID_New, Frame::OnNew)
-EVT_MENU(ID_Open, Frame::OnOpen)
-EVT_MENU(ID_Save, Frame::OnSave)
-EVT_MENU(ID_Save_As, Frame::OnSaveAs)
-EVT_MENU(ID_MCC, Frame::OnMCC)
-wxEND_EVENT_TABLE()
-
 Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     : wxFrame(nullptr, wxID_ANY, title, pos, size)
 {
+
+    model = new Model();
+    integrator = new Integrator();
 
     SetupMenuBar();
     m_ToolBar = this->CreateToolBar(wxTB_HORIZONTAL, wxID_ANY);
@@ -37,12 +37,12 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     //-------------------------------------------------------------------------
     // Frame Design
     wxBoxSizer* sizerMstr = new wxBoxSizer(wxHORIZONTAL);
-    wxBoxSizer* sizerRght = new wxBoxSizer(wxVERTICAL);
-    wxPanel* rghtPanel = new wxPanel(this);
-    wxPanel* rtopPanel = new wxPanel(rghtPanel);
-    wxPanel* rmidPanel = new wxPanel(rghtPanel);
-    wxPanel* rlowPanel = new wxPanel(rghtPanel);
-    wxPanel* rbtmPanel = new wxPanel(rghtPanel);
+    sizerRght = new wxBoxSizer(wxVERTICAL);
+    rghtPanel = new wxPanel(this);
+    rtopPanel = new wxPanel(rghtPanel);
+    rmidPanel = new wxPanel(rghtPanel);
+    rlowPanel = new wxPanel(rghtPanel);
+    rbtmPanel = new wxPanel(rghtPanel);
     this->SetBackgroundColour(wxColor(200, 200, 200));
     rghtPanel->SetBackgroundColour(wxColor(200, 200, 200));
     rtopPanel->SetBackgroundColour(wxColor(120, 120,  50));
@@ -51,7 +51,6 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     rbtmPanel->SetBackgroundColour(wxColor(120, 50, 120));
 
     // graphics on the frame's client area itself
-    Integrator* integrator = new Integrator();
     auto book = new wxListbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
     book->SetInternalBorder(0);
     chart1 = new ChartControl(book, wxID_ANY, wxDefaultPosition, wxDefaultSize);
@@ -69,30 +68,24 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     book->SetSelection(1);
     sizerMstr->Add(book, 1, wxEXPAND | wxALL, 3);
 
-    // Model parameters
-    Model* model = new Model();
-    SetupListView(rtopPanel, "Parameter", model->GetParameters());
+    modelLabel = model->GetDefaultLabel();
+    modelParameters = model->GetDefaultParameters();
+    integratorSettings = integrator->GetDefaultSettings();
+    integratorInitialState = integrator->GetDefaultInitialState();
+    integratorLoading = integrator->GetDefaultLoading();
+
+    SetupListView(rtopPanel, "Parameter", modelParameters);
     sizerRght->Add(rtopPanel, 0, wxEXPAND | wxALL, 2);
-    delete model;
+    SetupListView(rmidPanel, "Setting", integratorSettings);
+    sizerRght->Add(rmidPanel, 0, wxEXPAND | wxALL, 2);
+    SetupListView(rlowPanel, "Initial State", integratorInitialState);
+    sizerRght->Add(rlowPanel, 1, wxEXPAND | wxALL, 2);
+    SetupListView(rbtmPanel, "Loading", integratorLoading);
+    sizerRght->Add(rbtmPanel, 1, wxEXPAND | wxALL, 2);
+    rghtPanel->SetSizerAndFit(sizerRght);
 
     auto minChartSize = 2.0 * rtopPanel->GetBestSize();
     book->SetMinSize(minChartSize);
-
-    // Settings
-    SetupListView(rmidPanel, "Setting", integrator->GetSettings());
-    sizerRght->Add(rmidPanel, 0, wxEXPAND | wxALL, 2);
-
-    // Initial State
-    SetupListView(rlowPanel, "Initial State", integrator->GetInitialState());
-    sizerRght->Add(rlowPanel, 1, wxEXPAND | wxALL, 2);
-
-    // Loading
-    SetupListView(rbtmPanel, "Loading", integrator->GetLoading());
-    sizerRght->Add(rbtmPanel, 1, wxEXPAND | wxALL, 2);
-
-    delete integrator;
-
-    rghtPanel->SetSizerAndFit(sizerRght);
 
     sizerMstr->Add(rghtPanel, 0, wxEXPAND | wxALL, 2);
     this->SetSizerAndFit(sizerMstr);
@@ -106,12 +99,12 @@ void Frame::SetupMenuBar() {
 
     // add dropdown menu for File operations
     wxMenu* menuFile = new wxMenu;
-    menuFile->Append(ID_New, "&New", "Open a new file");
-    menuFile->Append(ID_Open, "&Open", "Open an existing file");
-    menuFile->Append(ID_Save, "&Save", "Save to file");
-    menuFile->Append(ID_Save_As, "&Save As", "Save to a new file");
+    menuFile->Append(ID_New, "&New", "Create a new project");
+    menuFile->Append(ID_Open, "&Open", "Open an existing project file");
+    menuFile->Append(ID_Save, "&Save", "Save current project to file");
+    menuFile->Append(ID_Save_As, "&Save As", "Save current project to a new file");
     menuFile->AppendSeparator();
-    menuFile->Append(ID_Print, "&Print", "Save to file");
+    menuFile->Append(ID_Print, "&Print", "Print current project to file");
     menuFile->AppendSeparator();
     menuFile->Append(wxID_EXIT);
 
@@ -158,9 +151,9 @@ void Frame::SetupMenuBar() {
     SetMenuBar(menuBar);
 }
 
-void Frame::SetupListView(wxPanel* p, const wxString& label, const std::vector<KeyValue>& keyValue) {
+void Frame::SetupListView(wxPanel* panel, const wxString& label, const std::vector<KeyValue>& keyValue) {
 
-    auto list = new wxListView(p);
+    auto list = new wxListView(panel);
     list->AppendColumn(label);
     list->AppendColumn("Value");
     list->SetColumnWidth(0, 100);
@@ -195,15 +188,155 @@ void Frame::SetupForm() {
 
 void Frame::OnNew(wxCommandEvent& event)
 {
-    wxLogMessage("Hello world from wxWidgets!");
+    // check for project data loss
+    if (notSaved) {
+        if (wxMessageBox(_("Current project has not been saved! Continue?"), 
+            _("Please confirm"),
+            wxICON_QUESTION | wxYES_NO, this) == wxNO)
+            return;
+    }
+
+    // load system-defined project defaults
+    SetStatusText("Loading system defaults ...");
+    modelLabel = model->GetDefaultLabel();
+    modelParameters = model->GetDefaultParameters();
+    integratorSettings = integrator->GetDefaultSettings();
+    integratorInitialState = integrator->GetDefaultInitialState();
+    integratorLoading = integrator->GetDefaultLoading();
+    FillRightPanels();
+    SetStatusText("System defaults loaded ...");
+    notSaved = true;
+}
+
+void Frame::FillRightPanels() {
+    sizerRght->Clear();
+    SetupListView(rtopPanel, "Parameter", modelParameters);
+    sizerRght->Add(rtopPanel, 0, wxEXPAND | wxALL, 2);
+    SetupListView(rmidPanel, "Setting", integratorSettings);
+    sizerRght->Add(rmidPanel, 0, wxEXPAND | wxALL, 2);
+    SetupListView(rlowPanel, "Initial State", integratorInitialState);
+    sizerRght->Add(rlowPanel, 1, wxEXPAND | wxALL, 2);
+    SetupListView(rbtmPanel, "Loading", integratorLoading);
+    sizerRght->Add(rbtmPanel, 1, wxEXPAND | wxALL, 2);
+    rghtPanel->SetSizerAndFit(sizerRght);
 }
 
 void Frame::OnOpen(wxCommandEvent& event)
 {
+    // check for project data loss
+    if (notSaved) {
+        if (wxMessageBox(_("Current project has not been saved! Continue?"), 
+            _("Please confirm"),
+            wxICON_QUESTION | wxYES_NO, this) == wxNO)
+                return;
+    }
+
+    // user selects the project file to open
+    wxFileDialog* openFileDialog = new wxFileDialog(this, _("Open TXT file"), "", "",
+            "txt files (*.txt)|*.txt", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+    if (openFileDialog->ShowModal() == wxID_CANCEL)
+        return;     // user changed their mind...
+
+    // try to open the selected file
+    wxFileInputStream input_stream(openFileDialog->GetPath());
+    if (!input_stream.IsOk()) {
+        wxLogError("Cannot open file '%s'.", openFileDialog->GetPath());
+        return;
+    }
+
+    // load the project data from user-selected file
+    SetStatusText("Loading " + openFileDialog->GetPath() + "...");
+    wxTextInputStream text(input_stream);
+    std::string modelLabel{}, mark{}, label{};
+    double value{};
+    std::vector<KeyValue> parameters, settings, initialState, loading;
+    bool readError{ false };
+    while (input_stream.IsOk() && !input_stream.Eof()) {
+        std::string line = text.ReadLine();
+        mark = line.substr(0, line.find_first_of(' '));
+        if (mark == "Model") {
+            modelLabel = line.substr(mark.size());
+        }
+        else if (mark == "M") {
+            parameters.push_back(trim(line, 2));
+        }
+        else if (mark == "IS") {
+            settings.push_back(trim(line, 3));
+        }
+        else if (mark == "II") {
+            initialState.push_back(trim(line, 3));
+        }
+        else if (mark == "IL") {
+            loading.push_back(trim(line, 3));
+        }
+        else if (!line.empty()) {
+            wxMessageBox("Cannot interpret: " + line,
+                "Read Error on Open File", wxOK | wxICON_INFORMATION);
+            readError = true;
+            break;
+        }
+    }
+    if (!readError) {
+        this->modelLabel = modelLabel;
+        modelParameters = parameters;
+        integratorSettings = settings;
+        integratorInitialState = initialState;
+        integratorLoading = loading;
+        FillRightPanels();
+        SetStatusText(openFileDialog->GetPath() + " Loaded");
+        notSaved = true;
+    }
+    else {
+        SetStatusText(openFileDialog->GetPath() + " Not Loaded!");
+    }
+    Refresh();
+}
+
+KeyValue Frame::trim(const std::string& line, size_t pos) {
+    auto label = line.substr(pos);
+    auto next = label.find_first_not_of(' ');
+    label = label.substr(next, label.find_first_of(' '));
+    auto value = std::stod(std::string(line.substr(3 + label.size())));
+    return KeyValue{ label, value };
 }
 
 void Frame::OnSave(wxCommandEvent& event)
 {
+    // open save dialog
+    wxWindowPtr<wxFileDialog> saveFileDialog(new wxFileDialog(this, 
+        wxEmptyString, "", "", 
+        "Text Files (*.txt)|*.txt|All Files (*.*)|*.*", wxFD_SAVE));
+    saveFileDialog->ShowWindowModal();
+    saveFileDialog->Bind(wxEVT_WINDOW_MODAL_DIALOG_CLOSED, 
+        [this, saveFileDialog](wxWindowModalDialogEvent& event) {
+        if (event.GetReturnCode() == wxID_OK) {
+            //project->SetLabelText(wxString::Format("File = %s", saveFileDialog->GetPath()));
+        }
+        });
+
+    // save to user-specified file
+    SetStatusText("Saving to " + saveFileDialog->GetPath() + "...");
+    wxTextFile file(saveFileDialog->GetPath());
+    file.Create();
+    file.GoToLine(0);
+    wxString str = "Model " + model->GetLabel();
+    file.AddLine(str);
+    for (auto e : model->GetParameters()) {
+        file.AddLine("M " + e.label + ' ' + std::to_string(e.value));
+    }
+    for (auto e : integrator->GetSettings()) {
+        file.AddLine("IS " + e.label + ' ' + std::to_string(e.value));
+    }
+    for (auto e : integrator->GetInitialState()) {
+        file.AddLine("II " + e.label + ' ' + std::to_string(e.value));
+    }
+    for (auto e : integrator->GetLoading()) {
+        file.AddLine("IL " + e.label + ' ' + std::to_string(e.value));
+    }
+    file.Write();
+    file.Close();
+    notSaved = false;
+    SetStatusText(saveFileDialog->GetPath() + " Saved");
 }
 
 void Frame::OnSaveAs(wxCommandEvent& event)
@@ -248,5 +381,6 @@ void Frame::OnAbout(wxCommandEvent& event)
 
 Frame::~Frame()
 {
-
+    delete model;
+    delete integrator;
 }

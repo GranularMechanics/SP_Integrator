@@ -18,15 +18,24 @@ struct QuadFrame {
 };
 
 class Integrator {
+	std::vector<KeyValue> defaultSettings{};
+	std::vector<KeyValue> defaultInitialState{};
+	std::vector<KeyValue> defaultLoading{};
 	std::vector<KeyValue> settings{};
 	std::vector<KeyValue> initialState{};
 	std::vector<KeyValue> loading{};
 public:
 	Integrator();
+	std::vector<KeyValue> GetDefaultSettings() const;
+	std::vector<KeyValue> GetDefaultInitialState() const;
+	std::vector<KeyValue> GetDefaultLoading() const;
 	std::vector<KeyValue> GetSettings() const;
 	std::vector<KeyValue> GetInitialState() const;
 	std::vector<KeyValue> GetLoading() const;
 	void Set(const std::string& label, double value);
+	void SetSettings(const std::vector<KeyValue>& settings);
+	void SetInitialState(const std::vector<KeyValue>& initialState);
+	void SetLoading(const std::vector<KeyValue>& loading);
 	std::vector<double> Get(const std::string& label) const;
 };
 #endif

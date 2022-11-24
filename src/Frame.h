@@ -7,17 +7,36 @@
 
 class ChartControl;
 struct KeyValue;
+class Model;
+class Integrator;
 
 class Frame : public wxFrame
 {
+    // Project data
+    Model* model{};
+    Integrator* integrator{};
+    wxString modelLabel;
+    std::vector<KeyValue> modelParameters;
+    std::vector<KeyValue> integratorSettings;
+    std::vector<KeyValue> integratorInitialState;
+    std::vector<KeyValue> integratorLoading;
+    bool notSaved{ false };
+
+    // Frame Components
     wxToolBar* m_ToolBar{ nullptr };
     wxMenuBar* m_MenuBar{ nullptr };
-    wxListView* parameters;
-    wxListView* settings;
-    wxPanel* modelPanel{};
-    wxPanel* right_top;
-    wxPanel* left;
+    ChartControl* chart1;
+    ChartControl* chart2;
+    wxPanel* rtopPanel{ nullptr };
+    wxPanel* rmidPanel{ nullptr };
+    wxPanel* rlowPanel{ nullptr };
+    wxPanel* rbtmPanel{ nullptr };
+    wxPanel* rghtPanel;
+    wxBoxSizer* sizerRght;
+    int rectCount = 0;
+    std::mt19937 randomGen;
 
+    // callbacks
     void OnNew(wxCommandEvent& event);
     void OnOpen(wxCommandEvent& event);
     void OnSave(wxCommandEvent& event);
@@ -31,23 +50,16 @@ class Frame : public wxFrame
     void OnMohrCCap(wxCommandEvent& event);
     //void OnData(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
+
+    // Frame constructor functions
     void SetupMenuBar();
     void SetupListView(wxPanel* p, const wxString& label, const std::vector<KeyValue>& keyValue);
     void SetupForm();
+    void FillRightPanels();
+    KeyValue trim(const std::string& line, size_t pos);
 public:
     Frame(const wxString &title, const wxPoint &pos, const wxSize &size);
     ~Frame();
-
-    wxDECLARE_EVENT_TABLE();
-
-private:
-    ChartControl *chart1;
-    ChartControl* chart2;
-    ChartControl* chart3;
-    ChartControl* chart4;
-
-    int rectCount = 0;
-    std::mt19937 randomGen;
 };
 
 enum
