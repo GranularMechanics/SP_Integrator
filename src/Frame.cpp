@@ -73,16 +73,7 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     integratorSettings = integrator->GetDefaultSettings();
     integratorInitialState = integrator->GetDefaultInitialState();
     integratorLoading = integrator->GetDefaultLoading();
-
-    SetupListView(rtopPanel, "Parameter", modelParameters);
-    sizerRght->Add(rtopPanel, 0, wxEXPAND | wxALL, 2);
-    SetupListView(rmidPanel, "Setting", integratorSettings);
-    sizerRght->Add(rmidPanel, 0, wxEXPAND | wxALL, 2);
-    SetupListView(rlowPanel, "Initial State", integratorInitialState);
-    sizerRght->Add(rlowPanel, 1, wxEXPAND | wxALL, 2);
-    SetupListView(rbtmPanel, "Loading", integratorLoading);
-    sizerRght->Add(rbtmPanel, 1, wxEXPAND | wxALL, 2);
-    rghtPanel->SetSizerAndFit(sizerRght);
+    FillRightPanels();
 
     auto minChartSize = 2.0 * rtopPanel->GetBestSize();
     book->SetMinSize(minChartSize);
