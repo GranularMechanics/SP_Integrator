@@ -50,10 +50,13 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     rlowPanel->SetBackgroundColour(wxColor(120,  50, 120));
     rbtmPanel->SetBackgroundColour(wxColor(120, 50, 120));
 
+    //-------------------------------------------------------------------------
     // graphics on the frame's client area itself
-    auto book = new wxListbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+    auto book = new wxListbook(this, wxID_ANY, wxDefaultPosition, 
+        wxDefaultSize, wxNB_TOP);
     book->SetInternalBorder(0);
-    chart1 = new ChartControl(book, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    chart1 = new ChartControl(book, wxID_ANY, wxDefaultPosition,
+        wxDefaultSize);
     chart1->Set("p, q, v, eq", "q vs p", "q vs eq", "v vs p", "v vs eq");
     auto v1 = integrator->Get("p");
     auto v2 = integrator->Get("q");
@@ -61,18 +64,15 @@ Frame::Frame(const wxString &title, const wxPoint &pos, const wxSize &size)
     auto v4 = integrator->Get("v");
     chart1->Set(v1, v2, v3, v4);
     book->AddPage(chart1, "p, q, v, eq");
-    chart2 = new ChartControl(book, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    chart2 = new ChartControl(book, wxID_ANY, wxDefaultPosition, 
+        wxDefaultSize);
     chart2->Set("p, q", "q vs p");
     chart2->Set(v1, v2);
     book->AddPage(chart2, "q vs p");
     book->SetSelection(1);
     sizerMstr->Add(book, 1, wxEXPAND | wxALL, 3);
 
-    modelLabel = model->GetDefaultLabel();
-    modelParameters = model->GetDefaultParameters();
-    integratorSettings = integrator->GetDefaultSettings();
-    integratorInitialState = integrator->GetDefaultInitialState();
-    integratorLoading = integrator->GetDefaultLoading();
+    LoadDefaults();
     FillRightPanels();
 
     auto minChartSize = 2.0 * rtopPanel->GetBestSize();
@@ -189,14 +189,18 @@ void Frame::OnNew(wxCommandEvent& event)
 
     // load system-defined project defaults
     SetStatusText("Loading system defaults ...");
+    LoadDefaults();
+    FillRightPanels();
+    SetStatusText("System defaults loaded ...");
+    notSaved = true;
+}
+
+void Frame::LoadDefaults() {
     modelLabel = model->GetDefaultLabel();
     modelParameters = model->GetDefaultParameters();
     integratorSettings = integrator->GetDefaultSettings();
     integratorInitialState = integrator->GetDefaultInitialState();
     integratorLoading = integrator->GetDefaultLoading();
-    FillRightPanels();
-    SetStatusText("System defaults loaded ...");
-    notSaved = true;
 }
 
 void Frame::FillRightPanels() {

@@ -85,7 +85,7 @@ void ChartControl::OnPaint(wxPaintEvent& evt)
             DrawComponent(dc, gc, rightTopArea, trt, rbx, lty, false, false);
 
             wxRect2DDouble leftBottomArea{ marginX / 2.0, halfHeight, halfWidth, halfHeight };
-            DrawComponent(dc, gc, leftBottomArea, tlb, rbx, rby, true, true);
+            DrawComponent(dc, gc, leftBottomArea, tlb, ltx, rby, true, true);
 
             wxRect2DDouble rightBottomArea{ halfWidth, halfHeight, halfWidth, halfHeight };
             DrawComponent(dc, gc, rightBottomArea, trb, rbx, rby, true, false);
@@ -110,7 +110,8 @@ void ChartControl::DrawComponent(
     const std::vector<double>& x,
     const std::vector<double>& y,
     bool drawXLabels,
-    bool drawYLabels) {
+    bool drawYLabels
+) {
 
     auto values = y;
     double tw, th;
@@ -136,21 +137,21 @@ void ChartControl::DrawComponent(
     normalizedToChartArea.Scale(chartArea.m_width, chartArea.m_height);
 
     // vertical axis
-    double lowValue = *std::min_element(values.begin(), values.end());
-    double highValue = *std::max_element(values.begin(), values.end());
+    double lowValueY = *std::min_element(values.begin(), values.end());
+    double highValueY = *std::max_element(values.begin(), values.end());
 
-    const auto& [segmentCount, rangeLow, rangeHigh] = calculateChartSegmentCountAndRange(lowValue, highValue);
+    const auto& [segmentCount, rangeLow, rangeHigh] = calculateChartSegmentCountAndRange(lowValueY, highValueY);
 
     double yValueSpan = rangeHigh - rangeLow;
-    lowValue = rangeLow;
-    highValue = rangeHigh;
+    lowValueY = rangeLow;
+    highValueY = rangeHigh;
 
     double yLinesCount = segmentCount + 1;
 
-    wxAffineMatrix2D normalizedToValue{};
-    normalizedToValue.Translate(0, highValue);
-    normalizedToValue.Scale(1, -1);
-    normalizedToValue.Scale(static_cast<double>(values.size() - 1), yValueSpan);
+    wxAffineMatrix2D normalizedToValueY{};
+    normalizedToValueY.Translate(0, highValueY);
+    normalizedToValueY.Scale(1, -1);
+    normalizedToValueY.Scale(static_cast<double>(values.size() - 1), yValueSpan);
 
     gc->SetPen(wxPen(wxColor(128, 128, 128)));
     gc->SetFont(*wxNORMAL_FONT, wxSystemSettings::GetAppearance().IsDark() ? *wxWHITE : *wxBLACK);
@@ -166,7 +167,7 @@ void ChartControl::DrawComponent(
         gc->StrokeLines(2, linePoints);
 
         if (drawYLabels) {
-            double valueAtLineY = normalizedToValue.TransformPoint({ 0, normalizedLineY }).m_y;
+            double valueAtLineY = normalizedToValueY.TransformPoint({ 0, normalizedLineY }).m_y;
 
             auto text = wxString::Format("%.2f", valueAtLineY);
             text = wxControl::Ellipsize(text, dc, wxELLIPSIZE_MIDDLE, chartArea.GetLeft() - labelsToChartAreaMargin);
@@ -179,21 +180,21 @@ void ChartControl::DrawComponent(
 
     // horizontal axis 
     values = x;
-    lowValue = *std::min_element(values.begin(), values.end());
-    highValue = *std::max_element(values.begin(), values.end());
+    auto lowValueX = *std::min_element(values.begin(), values.end());
+    auto highValueX = *std::max_element(values.begin(), values.end());
 
-    const auto& [xsegmentCount, xrangeLow, xrangeHigh] = calculateChartSegmentCountAndRange(lowValue, highValue);
+    const auto& [xsegmentCount, xrangeLow, xrangeHigh] = calculateChartSegmentCountAndRange(lowValueX, highValueX);
 
     double xValueSpan = xrangeHigh - xrangeLow;
-    lowValue = xrangeLow;
-    highValue = xrangeHigh;
+    lowValueX = xrangeLow;
+    highValueX = xrangeHigh;
 
     double xLinesCount = xsegmentCount + 1;
 
-    normalizedToValue = wxAffineMatrix2D();
-    normalizedToValue.Translate(0, highValue);
-    normalizedToValue.Scale(1, -1);
-    normalizedToValue.Scale(static_cast<double>(values.size() - 1), xValueSpan);
+    wxAffineMatrix2D normalizedToValueX;
+    normalizedToValueX.Translate(lowValueX, 0);
+    normalizedToValueX.Scale(1, -1);
+    normalizedToValueX.Scale(xValueSpan, static_cast<double>(values.size() - 1));
 
     gc->SetPen(wxPen(wxColor(128, 128, 128)));
     gc->SetFont(*wxNORMAL_FONT, wxSystemSettings::GetAppearance().IsDark() ? *wxWHITE : *wxBLACK);
@@ -209,7 +210,7 @@ void ChartControl::DrawComponent(
         gc->StrokeLines(2, linePoints);
 
         if (drawXLabels) {
-            double valueAtLineX = normalizedToValue.TransformPoint({ normalizedLineX, 0 }).m_x;
+            double valueAtLineX = normalizedToValueX.TransformPoint({ normalizedLineX, 0 }).m_x;
 
             auto text = wxString::Format("%.2f", valueAtLineX);
             text = wxControl::Ellipsize(text, dc, wxELLIPSIZE_MIDDLE, chartArea.GetLeft() - labelsToChartAreaMargin);
@@ -220,7 +221,6 @@ void ChartControl::DrawComponent(
         }
     }
 
-    // line plot
     wxPoint2DDouble leftHLinePoints[] = {
         normalizedToChartArea.TransformPoint({0, 0}),
         normalizedToChartArea.TransformPoint({0, 1}) };
@@ -232,16 +232,19 @@ void ChartControl::DrawComponent(
     gc->StrokeLines(2, leftHLinePoints);
     gc->StrokeLines(2, rightHLinePoints);
 
+    // line plot
     wxPoint2DDouble* pointArray = new wxPoint2DDouble[values.size()];
 
-    wxAffineMatrix2D valueToNormalized = normalizedToValue;
+    wxAffineMatrix2D valueToNormalized;
+    valueToNormalized.Translate(lowValueX, highValueY);
+    valueToNormalized.Scale(xValueSpan, -yValueSpan);
     valueToNormalized.Invert();
     wxAffineMatrix2D valueToChartArea = normalizedToChartArea;
     valueToChartArea.Concat(valueToNormalized);
 
     for (int i = 0; i < values.size(); i++)
     {
-        pointArray[i] = valueToChartArea.TransformPoint({ static_cast<double>(i), values[i] });
+        pointArray[i] = valueToChartArea.TransformPoint({ x[i], y[i]});
     }
 
     gc->SetPen(wxPen(wxSystemSettings::GetAppearance().IsDark() ? *wxCYAN : *wxBLUE, 3));

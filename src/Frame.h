@@ -15,7 +15,8 @@ class Frame : public wxFrame
     // Project data
     Model* model{};
     Integrator* integrator{};
-    wxString modelLabel;
+    wxString modelLabel{};
+    wxString project{};
     std::vector<KeyValue> modelParameters;
     std::vector<KeyValue> integratorSettings;
     std::vector<KeyValue> integratorInitialState;
@@ -25,13 +26,13 @@ class Frame : public wxFrame
     // Frame Components
     wxToolBar* m_ToolBar{ nullptr };
     wxMenuBar* m_MenuBar{ nullptr };
-    ChartControl* chart1;
-    ChartControl* chart2;
+    ChartControl* chart1{ nullptr };
+    ChartControl* chart2{ nullptr };
     wxPanel* rtopPanel{ nullptr };
     wxPanel* rmidPanel{ nullptr };
     wxPanel* rlowPanel{ nullptr };
     wxPanel* rbtmPanel{ nullptr };
-    wxPanel* rghtPanel;
+    wxPanel* rghtPanel{ nullptr };
     wxBoxSizer* sizerRght;
     int rectCount = 0;
     std::mt19937 randomGen;
@@ -55,6 +56,7 @@ class Frame : public wxFrame
     void SetupMenuBar();
     void SetupListView(wxPanel* p, const wxString& label, const std::vector<KeyValue>& keyValue);
     void SetupForm();
+    void LoadDefaults();
     void FillRightPanels();
     KeyValue trim(const std::string& line, size_t pos);
 public:

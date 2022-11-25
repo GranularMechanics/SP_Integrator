@@ -108,7 +108,7 @@ std::vector<double> Integrator::Get(const std::string& label) const {
         v.push_back(0.34);
         v.push_back(-0.98);
         v.push_back(-0.17);
-        v.push_back(0.33);
+        v.push_back(0.23);
     }
     else {
 
